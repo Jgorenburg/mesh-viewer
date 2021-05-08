@@ -244,7 +244,7 @@ int main(int argc, char** argv)
    LoadModels("../models/");
    LoadModel(0);
 
-   GLuint shaderId = LoadShader("../shaders/phong.vs", "../shaders/phong.fs");
+   GLuint shaderId = LoadShader("../shaders/unlit.vs", "../shaders/unlit.fs");
    glUseProgram(shaderId);
 
    // Loop until the user closes the window 

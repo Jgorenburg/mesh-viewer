@@ -1,6 +1,8 @@
 // Bryn Mawr College, alinen, 2020
 //
 
+#define _USE_MATH_DEFINES
+
 #include "AGL.h"
 #include "AGLM.h"
 #include <cmath>
@@ -11,11 +13,25 @@
 using namespace std;
 using namespace glm;
 
+bool shiftHeld = false;
+float Azimuth = 0;
+float Elevation = 0;
+float oldXPos, oldYPos = -1;
+
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
    {
       glfwSetWindowShouldClose(window, GLFW_TRUE);
+   }
+   // Only left shift can move the camera
+   if (key == GLFW_KEY_LEFT_SHIFT  && action == GLFW_PRESS)
+   {
+       shiftHeld = true;
+   }
+   if (key == GLFW_KEY_LEFT_SHIFT && action == GLFW_RELEASE)
+   {
+       shiftHeld = false;
    }
 }
 
@@ -53,6 +69,23 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
    // TODO: CAmera controls
+    // initialize values
+    if (oldYPos == -1) {
+        oldXPos = xpos;
+        oldYPos = ypos;
+    }
+    // rotating camera
+    else if (shiftHeld) {
+        float deltaX = xpos - oldXPos;
+        float deltaY = ypos - oldYPos;
+
+        Azimuth = Azimuth + deltaX / 500 * M_PI;
+        Elevation = Elevation + deltaY / 500 * M_PI;
+
+    }
+
+    oldXPos = xpos;
+    oldYPos = ypos;
 }
 
 static void PrintShaderErrors(GLuint id, const std::string label)
@@ -133,22 +166,42 @@ int main(int argc, char** argv)
    {
       1.0, -1.0, 0.5,
      -1.0, -1.0, 0.5,
+      0.0, 1.0,  0.5,
+
+     -1.0, -1.0, 0.5,
+      0.0, -1.0, -0.5,
+      0.0, 1.0,  0.5,
+
+      0.0, -1.0, -0.5,
+      1.0, -1.0, 0.5,
       0.0, 1.0,  0.5
+     
    };
 
    const float normals[] =
    {
       0.0f, 0.0f, 1.0f,
       0.0f, 0.0f, 1.0f,
-      0.0f, 0.0f, 1.0f
+      0.0f, 0.0f, 1.0f,
+
+      2.0f, -1.0f, 2.0f,
+      2.0f, -1.0f, 2.0f,
+      2.0f, -1.0f, 2.0f,
+
+     -2.0f, -1.0f, 2.0f,
+     -2.0f, -1.0f, 2.0f,
+     -2.0f, -1.0f, 2.0f
+     
    };
 
    const unsigned int indices[] =
    {
-      0, 1, 2
+      0, 1, 2, 
+      3, 4, 5, 
+      6, 7, 8
    };
 
-   int numTriangles = 1;
+   int numTriangles = 3;
 
    GLuint vboPosId;
    glGenBuffers(1, &vboPosId);
@@ -176,6 +229,9 @@ int main(int argc, char** argv)
    glEnableVertexAttribArray(1); // 1 -> Sending Normals to array #1 in the active shader
    glBindBuffer(GL_ARRAY_BUFFER, vboNormalId); // always bind before setting data
    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte*)NULL);
+
+
+
 
    GLint result;
    std::string vertexShader = LoadShaderFromFile("../shaders/unlit.vs");
@@ -215,10 +271,33 @@ int main(int argc, char** argv)
 
    glUseProgram(shaderId);
 
+   // mvp stuff
+   GLuint matrixParam = glGetUniformLocation(shaderId, "mvp");
+   glm::mat4 transform(1.0); // initialize to identity
+   glm::mat4 projection = glm::perspective(glm::radians(60.0), 1.0, 0.1, 10.0);
+
+   
+   glm::vec3 cameraPos(0, 0, 3);
+   glm::vec3 origin(0);
+   float dist = glm::length(cameraPos - origin);
+   float x = dist * sin(Azimuth) * cos(Elevation) + origin.x;
+   float y = dist * sin(Elevation) + origin.y;
+   float z = dist * cos(Azimuth) * cos(Elevation) + origin.z;
+   glm::mat4 camera = glm::lookAt(cameraPos, origin, glm::vec3(0, 1, 0));
+
    // Loop until the user closes the window 
    while (!glfwWindowShouldClose(window))
    {
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear the buffers
+
+      // camera animation
+      x = dist * sin(Azimuth) * cos(Elevation) + origin.x;
+      y = dist * sin(Elevation) + origin.y;
+      z = dist * cos(Azimuth) * cos(Elevation) + origin.z;
+      camera = glm::lookAt(vec3(x, y, z), origin, glm::vec3(0, 1, 0));
+
+      glm::mat4 mvp = projection * camera * transform;
+      glUniformMatrix4fv(matrixParam, 1, GL_FALSE, &mvp[0][0]);
 
       // Draw primitive
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);

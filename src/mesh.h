@@ -3,6 +3,7 @@
 #define meshmodel_H_
 
 #include "AGLM.h"
+#include "list"
 
 namespace agl {
    class Mesh
@@ -38,6 +39,14 @@ namespace agl {
       // face indices in this model
       unsigned int* indices() const;
 
+   private:
+       float* vertices;
+       float* norm;
+       unsigned int* polygons;
+       float maxX, minX;
+       float maxY, minY;
+       float maxZ, minZ;
+       int numVerts, numPolygons;
    };
 }
 
