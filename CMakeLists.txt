@@ -87,7 +87,9 @@ set(SHADERS
     shaders/phong.fs
     shaders/phong.vs
     shaders/unlit.fs
-    shaders/unlit.vs)
+    shaders/unlit.vs
+    shaders/phong_pixel.fs
+    shaders/phong_pixel.vs)
 
 add_executable(simple-mesh src/simple.cpp ${SOURCES} ${SHADERS})
 target_link_libraries(simple-mesh ${CORE})

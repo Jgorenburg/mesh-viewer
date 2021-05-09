@@ -286,7 +286,7 @@ int main(int argc, char** argv)
    LoadModels("../models/");
    LoadModel(0);
 
-   GLuint shaderId = LoadShader("../shaders/phong.vs", "../shaders/phong.fs");
+   GLuint shaderId = LoadShader("../shaders/phong_pixel.vs", "../shaders/phong_pixel.fs");
    glUseProgram(shaderId);
 
    GLuint mvpId = glGetUniformLocation(shaderId, "uMVP"); 
