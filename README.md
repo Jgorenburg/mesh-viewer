@@ -41,3 +41,21 @@ mesh-viewer/build $ ../bin/mesh-viewer
 
 # TODO: Screenshots and writeup
 
+My unique feature for this project is per-pixel phong lighting, which allows for much more realistic and detailed reflectiveness in models.
+
+Vertex Phong:                                                                     
+
+
+Pixel Phong:
+
+![pTri](/images/triangle.gif)
+
+
+Other models:
+
+![ant](/images/ant.gif)
+
+![doug](/images/douglass.gif)
+
+
+
