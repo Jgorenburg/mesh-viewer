@@ -45,6 +45,7 @@ My unique feature for this project is per-pixel phong lighting, which allows for
 
 Vertex Phong:                                                                     
 
+![vTri](/images/triangle2.gif)
 
 Pixel Phong:
 
