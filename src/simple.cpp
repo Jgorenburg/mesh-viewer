@@ -13,7 +13,9 @@
 using namespace std;
 using namespace glm;
 
+bool mouseHeld = false;
 bool shiftHeld = false;
+float dist;
 float Azimuth = 0;
 float Elevation = 0;
 float oldXPos, oldYPos = -1;
@@ -23,15 +25,6 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
    {
       glfwSetWindowShouldClose(window, GLFW_TRUE);
-   }
-   // Only left shift can move the camera
-   if (key == GLFW_KEY_LEFT_SHIFT  && action == GLFW_PRESS)
-   {
-       shiftHeld = true;
-   }
-   if (key == GLFW_KEY_LEFT_SHIFT && action == GLFW_RELEASE)
-   {
-       shiftHeld = false;
    }
 }
 
@@ -58,24 +51,38 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
    int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
    if (state == GLFW_PRESS)
    {
+       shiftHeld = false;
+       mouseHeld = false;
        int keyPress = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
-       if (keyPress == GLFW_PRESS) {}
+       if (keyPress == GLFW_PRESS) {
+           shiftHeld = true;
+       }
+       else {
+           mouseHeld = true;
+       }
    }
    else if (state == GLFW_RELEASE)
    {
+       mouseHeld = false;
+       shiftHeld = false;
    }
 }
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
-   // TODO: CAmera controls
-    // initialize values
+    // TODO: Camera controls
+      // initialize values
     if (oldYPos == -1) {
         oldXPos = xpos;
         oldYPos = ypos;
     }
-    // rotating camera
     else if (shiftHeld) {
+        float deltaY = ypos - oldYPos;
+
+        dist = dist + deltaY / 200;
+    }
+    // rotating camera
+    else if (mouseHeld) {
         float deltaX = xpos - oldXPos;
         float deltaY = ypos - oldYPos;
 
@@ -279,7 +286,7 @@ int main(int argc, char** argv)
    
    glm::vec3 cameraPos(0, 0, 3);
    glm::vec3 origin(0);
-   float dist = glm::length(cameraPos - origin);
+   dist = glm::length(cameraPos - origin);
    float x = dist * sin(Azimuth) * cos(Elevation) + origin.x;
    float y = dist * sin(Elevation) + origin.y;
    float z = dist * cos(Azimuth) * cos(Elevation) + origin.z;

@@ -163,25 +163,18 @@ bool Mesh::loadPLY(const std::string& filename)
         float xwidth = (maxX - minX) / 2;
         float ywidth = (maxY - minY) / 2;
         float zwidth = (maxZ - minZ) / 2;
-        float xoffset = -1 - (minX / xwidth);
-        float yoffset = -1 - (minY / ywidth);
-        float zoffset = -1 - (minZ / zwidth);
+        float maxwidth = std::max(xwidth, std::max(ywidth, zwidth));
 
-        for (int i = 0; i < numVerts * 3; i++) {
-            if (i % 3 == 0) {
-                cout << endl;
-            }
-            cout << vertices[i] << " ";
-
-        }
-        cout << "end first\n";
+        float xoffset = -1 - (minX / maxwidth);
+        float yoffset = -1 - (minY / maxwidth);
+        float zoffset = -1 - (minZ / maxwidth);
 
         
         for (int i = 0; i < numVerts; i++) {
             int j = 3 * i;
-            vertices[j] = vertices[j] / xwidth + xoffset;
-            vertices[j + 1] = vertices[j + 1] / ywidth + yoffset;
-            vertices[j + 2] = vertices[j + 2] / zwidth + zoffset;
+            vertices[j] = vertices[j] / maxwidth + xoffset;
+            vertices[j + 1] = vertices[j + 1] / maxwidth + yoffset;
+            vertices[j + 2] = vertices[j + 2] / maxwidth + zoffset;
         }
         
 
@@ -189,7 +182,7 @@ bool Mesh::loadPLY(const std::string& filename)
 
 
         // runs for the polygons
-        cout << "gothere" << endl;
+        cout << "\ngothere" << endl;
         for (int i = 0; i < numPolygons; i++) {
             image >> placeholder;
             for (int j = 3 * i; j < 3 * i + 3; j++) {
@@ -199,13 +192,13 @@ bool Mesh::loadPLY(const std::string& filename)
             }
         }
 
-        for (int i = 0; i < numVerts * 3; i++) {
+        /*for (int i = 0; i < numVerts * 3; i++) {
             if (i % 3 == 0) {
                 cout << endl;
             }
             cout << vertices[i] << " ";
             
-        }
+        }*/
         /*for (int i = 0; i < numPolygons * 3; i++) {
             if (i % 3 == 0) {
                 cout << endl;

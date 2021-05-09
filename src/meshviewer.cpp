@@ -1,6 +1,8 @@
 // Bryn Mawr College, alinen, 2020
 //
 
+#define _USE_MATH_DEFINES
+
 #include "AGL.h"
 #include "AGLM.h"
 #include <cmath>
@@ -14,10 +16,18 @@ using namespace std;
 using namespace glm;
 using namespace agl;
 
+
+
 // globals
 Mesh theModel;
 int theCurrentModel = 0;
 vector<string> theModelNames;
+bool shiftHeld = false;
+bool mouseHeld = false;
+float dist;
+float Azimuth = 0;
+float Elevation = 0;
+float oldXPos, oldYPos = -1;
 
 // OpenGL IDs
 GLuint theVboPosId;
@@ -62,6 +72,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
       cout << "Current file: " << theModelNames[theCurrentModel] << endl;
       LoadModel(theCurrentModel);
    }
+
 }
 
 static void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -87,17 +98,48 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
    int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
    if (state == GLFW_PRESS)
    {
+       shiftHeld = false;
+       mouseHeld = false;
        int keyPress = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
-       if (keyPress == GLFW_PRESS) {}
+       if (keyPress == GLFW_PRESS) {
+           shiftHeld = true;
+       }
+       else {
+           mouseHeld = true;
+       }
    }
    else if (state == GLFW_RELEASE)
    {
+       mouseHeld = false;
+       shiftHeld = false;
    }
 }
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
    // TODO: Camera controls
+    // initialize values
+    if (oldYPos == -1) {
+        oldXPos = xpos;
+        oldYPos = ypos;
+    }
+    else if (shiftHeld) {
+        float deltaY = ypos - oldYPos;
+
+        dist = dist + deltaY / 200;
+    }
+    // rotating camera
+    else if (mouseHeld) {
+        float deltaX = xpos - oldXPos;
+        float deltaY = ypos - oldYPos;
+
+        Azimuth = Azimuth + deltaX / 500 * M_PI;
+        Elevation = Elevation + deltaY / 500 * M_PI;
+
+    }
+
+    oldXPos = xpos;
+    oldYPos = ypos;
 }
 
 static void PrintShaderErrors(GLuint id, const std::string label)
@@ -244,13 +286,57 @@ int main(int argc, char** argv)
    LoadModels("../models/");
    LoadModel(0);
 
-   GLuint shaderId = LoadShader("../shaders/unlit.vs", "../shaders/unlit.fs");
+   GLuint shaderId = LoadShader("../shaders/phong.vs", "../shaders/phong.fs");
    glUseProgram(shaderId);
+
+   GLuint mvpId = glGetUniformLocation(shaderId, "uMVP"); 
+   GLuint mvId = glGetUniformLocation(shaderId, "uMV"); 
+   GLuint nmvId = glGetUniformLocation(shaderId, "uNMV");
+   //GLuint pId = glGetUniformLocation(shaderId, "uP");
+
+
+   glUniform3f(glGetUniformLocation(shaderId, "Ks"), 1.0, 1.0, 1.0);
+   glUniform3f(glGetUniformLocation(shaderId, "Kd"), 0.4, 0.6, 1.0);
+   glUniform3f(glGetUniformLocation(shaderId, "Ks"), 0.4, 0.4, 0.4);
+   glUniform1f(glGetUniformLocation(shaderId, "Shininess"), 80.0f);
+   glUniform4f(glGetUniformLocation(shaderId, "LightPosition"), 100.0, 100.0, 100.0, 0.0);
+   glUniform3f(glGetUniformLocation(shaderId, "LightIntensity"), 1.0, 1.0, 1.0);
+
+
+   // mvp stuff
+   GLuint matrixParam = glGetUniformLocation(shaderId, "mvp");
+   glm::mat4 transform(1.0); // initialize to identity
+   glm::mat4 projection = glm::perspective(glm::radians(60.0), 1.0, 0.1, 10.0);
+
+
+   glm::vec3 cameraPos(0, 0, 3);
+   glm::vec3 origin(0);
+   dist = glm::length(cameraPos - origin);
+   float x = dist * sin(Azimuth) * cos(Elevation) + origin.x;
+   float y = dist * sin(Elevation) + origin.y;
+   float z = dist * cos(Azimuth) * cos(Elevation) + origin.z;
+   glm::mat4 camera = glm::lookAt(cameraPos, origin, glm::vec3(0, 1, 0));
+
+
 
    // Loop until the user closes the window 
    while (!glfwWindowShouldClose(window))
    {
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear the buffers
+
+      // camera animation
+      x = dist * sin(Azimuth) * cos(Elevation) + origin.x;
+      y = dist * sin(Elevation) + origin.y;
+      z = dist * cos(Azimuth) * cos(Elevation) + origin.z;
+      camera = glm::lookAt(vec3(x, y, z), origin, glm::vec3(0, 1, 0));
+
+      mat4 mvp = projection * camera * transform;
+      mat4 mv = camera * transform;
+      mat3 nmv = mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2]));
+      glUniformMatrix3fv(nmvId, 1, GL_FALSE, &nmv[0][0]); 
+      glUniformMatrix4fv(mvId, 1, GL_FALSE, &mv[0][0]); 
+      glUniformMatrix4fv(mvpId, 1, GL_FALSE, &mvp[0][0]);
+      
 
       // Draw primitive
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, theElementbuffer);
